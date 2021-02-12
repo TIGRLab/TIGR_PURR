@@ -37,21 +37,14 @@ process publish_pepolar{
 
     publishDir path: "${params.out}/${sub}",\
                mode: 'copy',\
-               saveAs: { "${name}.nii.gz" },
-               pattern: "*.nii.gz",
-               overwrite: params.rewrite
-
-    publishDir path: "${params.out}/${sub}",\
-               mode: 'copy',\
-               saveAs: { "${name}.json" },
-               pattern: "*.json",
+               saveAs: { "${name}" },
                overwrite: params.rewrite
 
     input:
-    tuple val(sub), path(img), path(json), val(name)
+    tuple val(sub), path(img), val(name)
 
     output:
-    tuple path(img), path(json)
+    path img
 
     shell:
     '''
@@ -161,26 +154,19 @@ workflow{
     bold2map = bold_sbref.filter{it[-1].isEmpty()}
                     .map{i,s,ser,d,pe,f ->[
                         i,ser,
-                        "${i}_${ser.toString().padLeft(2,'0')}_BOLD2FMAP-${pe}"
+                        "${i}_${ser.toString().padLeft(2,'0')}_BOLD2FMAP-${pe}.nii.gz"
                     ]}
                     .join(gen_pepolar.out.boldref, by: [0,1])
                     .map{i,ser,n,ref->[
-                        i,ser,ref,n
-                    ]}
-                    .join(i_gen_pepolar, by:[0, 1])
-                    .map{i,ser,ref,n,bold->[
-                        i,ref,
-                        bold.toString().replace(".nii.gz",".json"),
-                        n
+                        i,ref,n
                     ]}
 
 
     sbref2map = bold_sbref.filter{!(it[-1].isEmpty())}
                     .map{i,s,ser,d,pe,f ->[
                         i,f,
-                        f[0].toString().replace(".nii.gz",".json"),
                         "${i}_${(ser-1).toString().padLeft(2,'0')}"
-                        + "_SBREF2FMAP-${pe}"
+                        + "_SBREF2FMAP-${pe}.nii.gz"
                     ]}
 
     publish_pepolar(sbref2map.mix(bold2map))
